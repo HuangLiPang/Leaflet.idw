@@ -22,7 +22,8 @@
     
     <script src="../src/leaflet-idw.js"> </script>
     <script src="exampledata.js"></script>
-
+    <script src="../src/idw-legend.js"></script>
+    <script src="../src/idw-marker.js"></script>
     <script>
 
     var map = L.map('map').setView([-37.87, 175.475], 12);
@@ -36,8 +37,70 @@
             maxZoom: 18,
             cellSize: 10,
             exp: 3,
-            max: 1200,
-            range: 20.0
+            max: 1300,
+            range: 20.0,
+            aveLat: -37.89
         }).addTo(map);
+    var pm25Legend = new L.control.IDWLegend({
+            0: '#000066',
+            130: 'blue',
+            260: 'cyan',
+            390: 'lime',
+            520: 'yellow',            
+            650: 'orange',
+            780: 'red',
+            910: 'Maroon',
+            1040: '#660066',
+            1170: '#990099',
+            1300: '#ff66ff'
+        }, {
+          position: 'bottomright',
+          unit: "Unit: μg/m<sup>3</sup>"
+        }).addTo(map);
+    let stations = new L.layerGroup();
+      for (var i = addressPoints.length - 1; i >= 0; i--) {
+        let color = "#5D6D7E";
+        let popup = `${addressPoints[i][2]}`;
+        L.circleMarker(L.latLng(addressPoints[i][0], addressPoints[i][1]), {
+          radius: 5,
+          color: color,
+        }).bindPopup(popup).addTo(stations);
+      }
+    stations.addTo(map);
+    let idwMarker = undefined;
+    let idwDisplay = undefined;
+    map.on('click',
+        function mapClickListen(event) {
+            let pos = event.latlng;
+            if(idwMarker) {
+                idwDisplay.remove();
+                idwMarker.setLatLng(pos);
+            } else {
+                idwMarker = new L.idwMarker(
+                    pos, {
+                        ranges: [20.0],
+                        dataOptions: [[2, 0.0]],
+                        p: 2,
+                        radius: 5,
+                        points: [addressPoints]
+                    }).addTo(map);
+            }
+            idwDisplay = L.control.displayIDW(idwMarker.getIDW(), {
+                position: "bottomleft"
+            }).addTo(map);
+            // close button function
+            document.getElementById("idw-display-close-button").onclick = function(event) {
+                // avoid click on the map again
+                map.off('click', mapClickListen);
+                idwMarker.remove();
+                idwDisplay.remove();
+                idwMarker = undefined;
+                idwDisplay = undefined;
+                // turn on the map click function
+                setTimeout(() => {
+                    map.on('click', mapClickListen);
+                }, 100);
+            };
+        });
     </script>
 </html>

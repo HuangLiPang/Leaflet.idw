@@ -119,7 +119,7 @@
             for (var i = this._data.length - 1; i >= 0; i--) {
                 var p = this._data[i];
                 ctx.globalAlpha = p[2] / this._max;
-                ctx.drawImage(this._cell, p[0] - this._r, p[1] - this._r);
+                ctx.drawImage(this._cell, p[0], p[1]);
             }
 
             // colorize the heatmap, using opacity value of each pixel to get the right color from our gradient
@@ -281,7 +281,12 @@ L.IdwLayer = (L.Layer ? L.Layer : L.Class).extend({
             range = this.options.range === undefined ? 0.0 : this.options.range,
             cellCen = r / 2,
             nCellX = Math.ceil((bounds.max.x - bounds.min.x) / r) + 1,
-            nCellY = Math.ceil((bounds.max.y - bounds.min.y) / r) + 1;
+            nCellY = Math.ceil((bounds.max.y - bounds.min.y) / r) + 1,
+            // Latitude: 1 deg = 110.574 km
+            // Longitude: 1 deg = 111.320 * cos(latitude) km
+            // http://wp.mlab.tw/?p=2200
+            latToKm = 110.574,
+            lonToKm = 111.320 * Math.cos(this.options.aveLat * Math.PI / 180);
             
         var cellsn = new Array(nCellY),
             cellsd = new Array(nCellY);
@@ -303,9 +308,9 @@ L.IdwLayer = (L.Layer ? L.Layer : L.Class).extend({
                 // right bottom lat lon coordinate of the screen
                 rightBottom = map.containerPointToLatLng([map.getSize().x, map.getSize().y]),
                 // km per pixel on x-axis
-                offsetX = Math.abs(leftTop.lng - rightBottom.lng) * 104.64 / map.getSize().x,
+                offsetX = Math.abs(leftTop.lng - rightBottom.lng) * lonToKm / map.getSize().x,
                 // km per pixel on y-axis
-                offsetY = Math.abs(leftTop.lat - rightBottom.lat) * 110.69 / map.getSize().y
+                offsetY = Math.abs(leftTop.lat - rightBottom.lat) * latToKm / map.getSize().y
             for(var index = this._latlngs.length - 1; index >= 0; index--) {
                 var p = this._map.latLngToContainerPoint(
                         L.latLng(this._latlngs[index][0], this._latlngs[index][1])
